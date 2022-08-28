@@ -1,0 +1,185 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>rainapp</title>
+    <style>
+    body{
+        background:#ddf5ff;
+    }
+    #container{
+        margin:0 auto;
+    }
+    </style>
+</head>
+<body onload="init()">
+    <div id="container">
+        <canvas id="cvs"></canvas>
+        </div>
+        <script>
+            const speed=500;
+            const blockSize=30;
+            const boardRow=10;
+            const boardCol=20;
+            const cvs=document.getElementById("cvs");
+            const ctx=cvs.getContext("2d");
+            const canvasW=boardCol*blockSize;
+            const canvasH=boardRow*blockSize;
+            cvs.width=canvasW;
+            cvs.height=canvasH;
+            const container=document.getElementById("container");
+            container.style.width=canvasW+'px';
+            let count=0;
+            let playerPosX=0;
+            let playerPosY=0;
+            const rainSize=20;
+            const rain=[
+               [],
+               [
+                [1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1],
+                [0,1,0,1,0,0,1,0,0,1,1,0,0,0,1,0,1,0,1,0],
+                [0,1,0,0,1,1,0,1,1,0,0,0,1,1,0,1,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                ],
+               [
+                [0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1],
+                [0,1,0,1,0,0,1,0,0,1,1,0,0,0,1,0,1,1,1,1],
+                [0,1,0,0,1,1,0,1,1,0,0,1,1,1,0,1,1,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            ],
+              [
+                [0,0,1,0,0,1,0,0,1,0,0,0,1,0,0,0,0,1,0,1],
+                [0,1,0,1,0,0,1,1,1,1,1,1,0,1,1,0,1,0,1,0],
+                [1,1,1,0,0,1,0,0,1,0,0,0,1,1,0,1,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            ],
+                [
+                [0,0,1,0,0,1,0,0,0,0,1,0,0,0,1,1,0,1,0,1],
+                [0,1,0,1,0,0,1,1,0,1,1,0,0,1,1,0,1,0,1,1],
+                [1,1,0,0,1,1,0,1,1,0,0,1,0,1,0,0,0,1,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            ],
+                [
+                [0,0,1,0,0,0,0,1,0,0,0,1,0,0,0,0,0,1,0,1],
+                [0,1,0,1,0,0,1,1,0,1,1,0,0,0,1,0,1,1,1,0],
+                [0,1,1,0,1,1,0,0,1,0,0,1,1,1,1,1,0,1,0,0],
+                [0,0,0,0,0,0,0,0,0,0,0,1,0,0,1,1,1,0,0,0],
+            ],
+                [
+                [1,0,1,0,0,0,0,1,0,1,0,1,1,0,0,0,0,1,0,0],
+                [0,1,0,1,1,0,1,1,1,1,1,0,0,1,1,0,1,0,1,0],
+                [0,1,0,0,1,1,0,0,1,0,0,0,1,1,0,1,0,0,0,0],
+                [0,0,1,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0],
+            ],
+                [
+                [1,0,1,0,0,0,0,1,0,0,0,1,1,0,0,1,1,0,1,0],
+                [0,1,0,1,1,0,1,1,0,0,1,0,0,1,1,1,1,1,0,1],
+                [0,1,0,0,1,1,0,0,1,0,0,0,1,1,0,1,0,1,0,1],
+                [0,0,1,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0],
+            ],
+        ];
+        let rain_idx;
+        let rainChoice;
+            let offsetX=0;
+            let offsetY=0;
+            const board=[];
+            let timerId=NaN;
+            let isGameOver=false;
+            const img1=new Image();
+            img1.src="./images/rain.png"
+            const img2=new Image();
+            img2.src="./images/player.png"
+           const img3=new Image();
+            img3.src="./images/house.png"
+
+            const draw=()=>{
+                ctx.fillStyle='#A9CEEC'
+                ctx.fillRect(0,0,canvasW,canvasH);//背景
+                drawPlayer(playerPosX,playerPosY);//キャラ移動
+                for(let y=0; y<rainChoice.length;y++){
+                    for(let x=0;x<rainChoice[y].length;x++){
+                        if(rainChoice[y][x]){
+                            ctx.drawImage(img1,(offsetX+x)*blockSize,(offsetY+y)*blockSize,blockSize,blockSize);
+                        }
+                    }
+                }
+            };
+            const canMove=(dx,dy)=>{
+                let nx=playerPosX+dx;
+                if(nx<0||nx>=boardCol){
+                    return false;
+                   }
+                return true;
+            };
+            const canMoveRain=(dx,dy)=>{
+                let ny=offsetY+dy;
+                if(ny>=boardRow){
+                    return false;
+                   }
+                return true;
+            };
+            const drawPlayer=(x,y)=>{
+            ctx.drawImage(img2,x*blockSize,y*blockSize,blockSize,blockSize);
+            }
+            const drawHouse=(x,y)=>{
+            ctx.drawImage(img3,5,5,10,10);
+            }
+            document.onkeydown=(e)=>{
+                if(isGameOver) return;
+                switch(e.keyCode){
+                    case 37:
+                        if(canMove(-1,0)) playerPosX--;
+                        break;
+                     case 39:
+                        if(canMove(1,0)) playerPosX++;
+                        break;
+                }
+                draw();
+            };
+            const dropRain=()=>{
+             //if(GameOver) return;
+                if(canMoveRain(0,0)){
+                    offsetY++;
+                    // console.log("ok")
+                }else{
+                    rain_idx=randomIdx();
+                    rainChoice=rain[rain_idx];
+                    offsetX++
+                  initStartPosRain();
+                  count++;
+                  if(count==3){
+                drawHouse(playerPosX,playerPosY);
+                  clearInterval(timerId);
+                  }
+                }
+                draw();
+            }
+
+                const initStartPosRain=()=>{
+                    offsetY=0;
+                };
+            const initStartPos=()=>{
+                playerPosX=boardCol/2;
+                playerPosY=boardRow-1;
+            }
+                const randomIdx=()=>{
+                    return Math.floor(Math.random()*(rain.length-1))+1;
+                };
+            const init=()=>{
+                for(let y=0;y<boardRow;y++){
+                    board[y]=[];
+                    for(let x=0;x<boardCol;x++){
+                        board[y][x]=0;
+                    }
+                }
+                rain_idx=randomIdx();
+                rainChoice=rain[rain_idx];
+                initStartPosRain();
+                initStartPos();
+                timerId=setInterval(dropRain,speed);
+                draw();
+            };
+            </script>
+</body>
+</html>
